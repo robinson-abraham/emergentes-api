@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 
 // Adicione as novas importações aqui
-import routesAdminLogin from './routes/adminlogin'
+import routesAdminLogin from './routes/adminLogin'
 import routesAdmins from './routes/admins'
 
 // Mantenha as importações existentes
