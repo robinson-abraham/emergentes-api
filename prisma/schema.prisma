@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+model Categoria {
+  id      Int      @id @default(autoincrement())
+  nome    String   @db.VarChar(40)
+  imoveis Imovel[]
+
+  @@map("categorias")
+}
+
+model Imovel {
+  id          Int       @id @default(autoincrement())
+  titulo      String    @db.VarChar(100)
+  quartos     Int       @db.SmallInt
+  capacidade  Int       @db.SmallInt
+  valor_diaria Decimal   @db.Decimal(10, 2)
+  foto        String
+  comodidades String?
+  tipo        TipoImovel @default(CASA)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  destaque    Boolean   @default(true)
+  ativo       Boolean   @default(true) // Novo campo para exclusão lógica
+
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  categoriaId Int
+  reservas    Reserva[]
+
+  // Relacionamento com Admin (quem cadastrou o imóvel)
+  admin       Admin?    @relation(fields: [adminId], references: [id])
+  adminId     String?   @db.VarChar(36)
+
+  @@map("imoveis")
+}
+
+model Cliente {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  nome      String    @db.VarChar(60)
+  email     String    @unique @db.VarChar(40)
+  senha     String    @db.VarChar(60)
+  cidade    String    @db.VarChar(30)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  reservas  Reserva[]
+
+  @@map("clientes")
+}
+
+model Reserva {
+  id            Int      @id @default(autoincrement())
+  cliente       Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId     String   @db.VarChar(36)
+  imovel        Imovel   @relation(fields: [imovelId], references: [id])
+  imovelId      Int
+  data_checkin  DateTime
+  data_checkout DateTime
+  valor_total   Decimal  @db.Decimal(10, 2)
+  status        StatusReserva @default(PENDENTE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relacionamento com Admin (quem confirmou/cancelou a reserva)
+  admin         Admin?   @relation(fields: [adminId], references: [id])
+  adminId       String?  @db.VarChar(36)
+
+  @@map("reservas")
+}
+
+// NOVO MODELO: Admin
+model Admin {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  nome      String   @db.VarChar(60)
+  email     String   @unique @db.VarChar(40)
+  senha     String   @db.VarChar(60)
+  nivel     Int      @default(1) @db.SmallInt // Nível de permissão
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  imoveis   Imovel[]
+  reservas  Reserva[]
+  logs      Log[]
+
+  @@map("admins")
+}
+
+// NOVO MODELO: Log
+model Log {
+  id          Int      @id @default(autoincrement())
+  descricao   String   @db.VarChar(100)
+  complemento String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+
+  admin       Admin    @relation(fields: [adminId], references: [id])
+  adminId     String   @db.VarChar(36)
+
+  @@map("logs")
+}
+
+enum TipoImovel {
+  CASA
+  APARTAMENTO
+  CHACARA
+  CABANA
+}
+
+enum StatusReserva {
+  PENDENTE
+  CONFIRMADA
+  CANCELADA
+}
